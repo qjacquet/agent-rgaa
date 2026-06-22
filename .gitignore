@@ -1,0 +1,16 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Audit outputs (screenshots volumineux)
+audits/**/screenshots/
+
+# Secrets
+.env
+.env.audit
+*.credentials
+
+# OS
+.DS_Store
