@@ -34,6 +34,7 @@ Sur le **premier échantillon** de l'audit :
 
 ## Ressources (lire à la demande)
 
+- [architecture.md](architecture.md) — **pipeline MCP test par test** (obligatoire)
 - [chromium-cdp-tools.md](chromium-cdp-tools.md) — **substituts CDP obligatoires** (liste, vérification, interdictions)
 - [scoring.md](scoring.md) — notation C / NC / NA / NT
 - [tools-mapping.md](tools-mapping.md) — outils MCP et substituts
@@ -98,73 +99,87 @@ Fermer bandeaux cookies/modales repérés au snapshot avant de valider.
 
 **Règle** : aucun critère noté tant qu'un échantillon est `blocked`. Reprendre quand tous sont `ok` ou exclus/remplacés par l'utilisateur.
 
-## Phase 2 — Première passe
+## Phase 2 — Première passe (MCP test par test)
 
-**Session** : même onglet que l'auth. Si page login réapparaît → session expirée : Stop, reconnexion, reprendre au dernier checkpoint dans `audit-log.jsonl`.
+Voir **[architecture.md](architecture.md)** — aucune heuristique Python.
 
-### Suite CDP obligatoire par échantillon
+**Session** : même onglet que l'auth. Si page login réapparaît → session expirée : Stop, reconnexion, `scripts/audit/resume.py`.
 
-Avant de noter le moindre critère sur une page, exécuter **tous** les outils de [chromium-cdp-tools.md](chromium-cdp-tools.md) :
+### Découpage — 13 sous-agents (un par thématique)
 
-| # | Action MCP | Script / méthode |
-| - | ---------- | ---------------- |
-| 1 | `browser_navigate` | URL échantillon |
-| 2 | `browser_snapshot` | Fermer cookies si présents |
-| 3 | `Accessibility.getFullAXTree` | Arbre AX complet |
-| 4 | `Runtime.evaluate` | `scripts/repasse-collect.js` |
-| 5 | `browser_press_key` | Si critères 7.3 / 12.8 applicables |
-| 6 | Sauver | `audits/.../samples/{slug}.json` enrichi |
+```bash
+python3 scripts/audit/plan-theme.py {1..13} audits/{site}/{date}/
+```
 
-Logger : `{ "event": "cdp_collect", "sample", "tools": ["snapshot","axtree","collect","contrast",...] }`.
+Chaque sous-agent :
 
-**Collecte multi-échantillons** : déléguer à un **subagent** (`generalPurpose`) qui utilise **uniquement** le MCP `cursor-ide-browser` (navigate + CDP + Write). **Interdit** : scripts shell/CLI (`curl`, `requests`, Playwright, Python hors sauvegarde JSON) pour parcourir ou tester les pages.
+1. Lit `work-queue/theme-N.json`
+2. Pour chaque test × échantillon : exécute **toutes** les `agent_steps` via MCP
+3. Loggue via `scripts/audit/log-result.py`
+4. Ne marque **NT** que si `at_handoff` (VoiceOver/NVDA) ou `human_steps` AT
+
+### Outils MCP par type d'étape
+
+| Besoin | MCP |
+| ------ | --- |
+| DOM, attributs | `browser_cdp` → `Runtime.evaluate(scripts/cdp/query-dom.js)` |
+| Contraste | `scripts/cdp/contrast-scan.js` |
+| **Clavier** | **`browser_press_key`** (Tab, Enter, Space, Escape) + `browser_snapshot` |
+| Clic / formulaire | `browser_click`, `browser_fill` |
+| Arbre AX | `Accessibility.getFullAXTree` |
+| Preuve NC | `browser_take_screenshot` |
+
+**Interdit** : `score-from-collect.py`, `run-theme-audit.py`, `rgaa-score-enriched.py` (supprimés — heuristiques).
+
+### Suite CDP par échantillon (avant tests du thème)
+
+Sur chaque nouvelle page naviguée :
+
+1. `browser_navigate(url)` 2. `browser_snapshot` 3. cookies fermés
+4. `Accessibility.getFullAXTree` si arbre AX requis par le test
+5. Exécuter les `agent_steps` du test en cours
+
+Optionnel : `scripts/audit/save-evidence.py` pour archiver un snapshot DOM (preuve), **pas pour scorer**.
+
+Logger : `{ "event": "test_result", ... }` via `log-result.py`.
+
+**Collecte multi-échantillons** : déléguer à un **subagent par thématique** (`generalPurpose`) — MCP `cursor-ide-browser` uniquement.
 
 **Interdit en phase 2** :
 
-- Noter **NT** sur un test `agent_scope: full` sans avoir exécuté ses `agent_steps` via MCP.
-- Générer la grille uniquement via `score-from-collect.py` sans collecte MCP préalable.
-- Omettre `Accessibility.getFullAXTree` ou le scan contrastes.
+- Noter **NT** sur un test `agent_scope: full` sans avoir exécuté ses `agent_steps` via MCP
+- Générer la grille via Python sans entrées `test_result` dans `audit-log.jsonl`
+- Scripts heuristiques (`if h1Count > 1 then NC`)
 
-**Ordre** : pour chaque échantillon `ok`, parcourir les **106 critères** (thématiques 1→13) dans l'ordre du JSON.
+**Ordre** : thématiques 1→13 ; au sein de chaque thème, critères et tests dans l'ordre du JSON ; pour chaque test, les 11 échantillons.
 
-Pour chaque critère :
+Pour chaque test :
 
-1. Lire titre + tests dans `rgaa-rules.json`
-2. Pré-qualifier **NA** si hors périmètre manifeste (justification + preuve)
-3. Pour chaque test applicable, selon `agent_scope` dans le JSON :
+| `agent_scope` | Action agent | Résultat |
+| ------------- | ------------ | -------- |
+| **`full`** | Exécuter toutes les `agent_steps` via MCP | **pass / fail / na** → C/NC/NA |
+| **`partial`** | Exécuter `agent_steps` ; `human_steps` AT → nt | C/NC/NA ou nt |
+| **`at_only`** | — | **nt** (VoiceOver/NVDA) |
 
-| `agent_scope` | Action agent | Résultat agent |
-| ------------- | ------------ | -------------- |
-| **`full`** | Exécuter toutes les `agent_steps` (ou `methodology_steps` si pas de split) | **C / NC / NA** |
-| **`partial`** | Exécuter uniquement `agent_steps` | **C / NC / NA** sur la partie auto ; test **NT** si `human_steps` non satisfaites |
-| **`at_only`** | Pré-analyse DOM/AX (`pre_analysis`) uniquement | **NT** — pas de C/NC agent |
+5. Logger :
 
-4. L'agent **n'utilise jamais** VoiceOver, NVDA, JAWS ni TalkBack pour les `human_steps`.
-
-5. Logger dans `audit-log.jsonl` :
-
-```json
-{
-  "sample": "{url}",
-  "criterion": "7.3",
-  "test": "7.3.1",
-  "agent_scope": "full",
-  "agent_result": "pass|fail|na|nt",
-  "criterion_status_agent": "C|NC|NA|NT",
-  "human_complement_required": true,
-  "pre_analysis": "...",
-  "evidence": "...",
-  "timestamp": "..."
-}
+```bash
+python3 scripts/audit/log-result.py audits/.../ \
+  --sample {slug} --url {url} --theme {id} --criterion {cid} --test {tid} \
+  --scope full --result pass|fail|na|nt --evidence "..." --tools browser_navigate,browser_cdp,browser_press_key
 ```
 
-6. Exemple **7.3** : l'agent parcourt les gestionnaires d'événements (`browser_press_key` Tab/Enter, `browser_click` pour pointage), note **C** ou **NC**, puis le pré-rapport documente **Pour noter C** / **Cas NC** pour confirmation humaine clavier/pointage réel.
+6. **7.3** : parcourir les focusables avec `browser_press_key` Tab + Enter ; noter **pass/fail** ; pré-rapport pour confirmation humaine si `human_complement_required`.
 
 Entre échantillons : `browser_navigate` sur le même onglet.
 
 ## Phase 3 — Notation provisoire
 
-Appliquer [scoring.md](scoring.md). Remplir `grid.csv` avec statuts **provisoires** (les NT ne sont pas des C).
+```bash
+python3 scripts/audit/aggregate-grid.py audits/{site}/{date}/
+```
+
+Appliquer [scoring.md](scoring.md). **Source unique** : entrées `test_result` dans `audit-log.jsonl`.
 
 ## Phase 4 — Pré-rapport et relais humain
 

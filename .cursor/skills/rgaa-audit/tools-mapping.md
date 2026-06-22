@@ -28,17 +28,17 @@ Référence : [Méthodologie de test RGAA](https://accessibilite.numerique.gouv.
 | ------------------------------- | ------------------- | ------ | ------ |
 | Inspecteur navigateur | `browser_snapshot` + `DOM.*` | — | — |
 | Arbre d'accessibilité | `Accessibility.getFullAXTree` | — | Pas restitution sonore |
-| Web Developer Toolbar | `Runtime.evaluate` | `page-audit-collect.js` | — |
-| **WAVE** | Scan programmatique DOM | `page-audit-collect.js` | Pas overlay visuel |
-| **HeadingsMap** | `h1–h6` + sauts | `page-audit-collect.js` | — |
-| **WCAG Contrast Checker** | Luminance JS + `CSS.getComputedStyleForNode` | `cdp-contrast-scan.js` | Fond image → NT |
+| Web Developer Toolbar | `Runtime.evaluate` | `scripts/cdp/query-dom.js` | — |
+| **WAVE** | Scan programmatique DOM | `scripts/cdp/query-dom.js` | Pas overlay visuel |
+| **HeadingsMap** | `h1–h6` + sauts | `scripts/cdp/query-dom.js` | — |
+| **WCAG Contrast Checker** | Luminance JS + `CSS.getComputedStyleForNode` | `scripts/cdp/contrast-scan.js` | Fond image → NT |
 | Validateur W3C | `Runtime.evaluate` → `outerHTML` / doctype | inline | Optionnel |
 | Navigation clavier | `browser_press_key` | — | 7.3 : complément humain possible |
 | NVDA / VoiceOver / JAWS | **Humain** phase 4 | — | NT si AT requis |
 
 ## Snippets via `browser_cdp` (`Runtime.evaluate`)
 
-Voir `scripts/page-audit-collect.js` et `scripts/cdp-contrast-scan.js`.
+Voir `scripts/cdp/query-dom.js` et `scripts/cdp/contrast-scan.js`.
 
 ### Hiérarchie des titres (HeadingsMap)
 

@@ -103,12 +103,17 @@ def classify_agent_scope(
         scope = "at_only"
     elif human_steps:
         scope = "partial"
-    elif requires_judgment:
-        scope = "partial"
     else:
+        # Jugement « porteuse d'info » etc. : l'agent exécute quand même toutes
+        # les agent_steps via MCP ; complément humain dans le pré-rapport.
         scope = "full"
 
-    human_complement = scope in {"partial", "at_only"} or test_id in HUMAN_COMPLEMENT_TEST_IDS
+    human_complement = (
+        bool(human_steps)
+        or scope == "at_only"
+        or test_id in HUMAN_COMPLEMENT_TEST_IDS
+        or requires_judgment
+    )
 
     return {
         "agent_scope": scope,
@@ -119,8 +124,11 @@ def classify_agent_scope(
         "failure_criterion": verdict["failure_criterion"],
         # Legacy fields
         "agent_excluded": scope == "at_only",
-        "exclusion_reason": "assistive_tech" if scope == "at_only" else ("human_judgment" if requires_judgment and scope == "partial" else None),
-        "agent_may_pre_analyse": scope in {"partial", "at_only"},
+        "exclusion_reason": (
+            "assistive_tech" if scope == "at_only"
+            else ("human_judgment" if requires_judgment else None)
+        ),
+        "agent_may_pre_analyse": scope in {"partial", "at_only"} or requires_judgment,
     }
 
 
