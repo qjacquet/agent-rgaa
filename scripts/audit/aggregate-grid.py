@@ -42,7 +42,7 @@ def aggregate_site(statuses: list[str]) -> str:
 
 
 def load_test_results(audit_dir: Path) -> dict[tuple[str, str, str], str]:
-    """(criterion, sample, test_id) → pass|fail|na|nt"""
+    """(criterion, sample, test_id) → pass|fail|na|nt (human_complement écrase agent)"""
     out: dict[tuple[str, str, str], str] = {}
     log = audit_dir / "audit-log.jsonl"
     if not log.exists():
@@ -51,10 +51,13 @@ def load_test_results(audit_dir: Path) -> dict[tuple[str, str, str], str]:
         if not line.strip():
             continue
         e = json.loads(line)
-        if e.get("event") != "test_result":
-            continue
-        key = (e["criterion"], e["sample"], e["test"])
-        out[key] = e["agent_result"]
+        event = e.get("event")
+        if event == "test_result":
+            key = (e["criterion"], e["sample"], e["test"])
+            out[key] = e["agent_result"]
+        elif event == "human_complement":
+            key = (e["criterion"], e["sample"], e["test"])
+            out[key] = e["human_result"]
     return out
 
 

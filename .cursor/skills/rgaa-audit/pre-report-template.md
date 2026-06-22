@@ -104,8 +104,23 @@ Voir [grid.csv](./grid.csv).
 
 ## 6. Prochaines étapes
 
-Répondre : `{critère} | {url} | {test_id} | C|NC|NA | commentaire`
+1. **7.3.x** — validation clavier interactive (AskQuestion, cf. [human-complement.md](human-complement.md))
+2. **Auto-confirm** — `python3 scripts/audit/auto-confirm-human.py audits/{site}/{date}/` (hors AT/jugement)
+3. **AT + jugement** — réponses manuelles ou spot-check lecteur d'écran
+
+Format : `{critère} | {url} | {test_id} | C|NC|NA | commentaire`
+
+Ou entrées `human_complement` directes dans `audit-log.jsonl`.
 ```
+
+## Compléments par tier
+
+| Tier | Tests typiques | Action |
+| ---- | -------------- | ------ |
+| Clavier/focus réel | 7.3.x | Interactif obligatoire — **ne pas** auto-confirmer |
+| Structurel DOM | 7.4, 8.9, 9.3, 10.7, 11.x, 12.7 | Auto-confirm possible après dry-run |
+| AT | 7.1.2, 10.8.1, `partial` avec `human_steps` AT | VoiceOver/NVDA |
+| Jugement | thématique 1.x, 3.1, 4.2, 7.1.3 | Humain — pertinence / porteuse d'info |
 
 ## Règles
 

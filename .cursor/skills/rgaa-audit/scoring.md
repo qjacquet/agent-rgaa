@@ -60,3 +60,27 @@ Pour tout test listé dans le pré-rapport, documenter :
 ## Priorité en cas de conflit
 
 `fail` > `nt` > `pass` > `na` pour déterminer le statut critère.
+
+## Compléments humains (`human_complement`)
+
+Phase 4 : entrées `event: "human_complement"` dans `audit-log.jsonl`.
+
+| Champ | Valeurs | Rôle |
+| ----- | ------- | ---- |
+| `human_result` | `pass` \| `fail` \| `na` | Résultat final après complément |
+| `source` | `interactive_keyboard` \| `interactive_at` \| `auto_confirmed_agent` | Traçabilité |
+| `comment` | texte libre | Justification (focus invisible, click-only, etc.) |
+
+**Agrégation** (`aggregate-grid.py`) : pour chaque triplet `(criterion, sample, test)`, la **dernière** valeur l'emporte — `human_complement` écrase `test_result.agent_result`.
+
+**NA agent** : pas de `human_complement` attendu.
+
+### Politique zéro NT (phase 2)
+
+Sur `agent_scope: full`, l'agent note **pass/fail/na** — pas NT par défaut. Le complément humain **confirme ou infirme**, il ne comble pas un NT évité.
+
+### Auto-confirmation
+
+`scripts/audit/auto-confirm-human.py` écrit des `human_complement` avec `human_result` = `agent_result` pour les tests hors tiers **AT** et **jugement** (cf. [human-complement.md](human-complement.md)).
+
+**Exclure** de l'auto-confirm : `7.3.x` (validation clavier interactive obligatoire).

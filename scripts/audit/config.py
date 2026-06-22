@@ -5,7 +5,7 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 RULES_PATH = ROOT / "data" / "rgaa-rules.json"
 CDP_DIR = ROOT / "scripts" / "cdp"
 
-# Tests dont la méthodologie exige une restitution AT (VoiceOver/NVDA) — seul vrai NT agent
+# Tests dont la méthodologie exige une restitution AT (VoiceOver/NVDA) — humain obligatoire, pas auto-confirm
 AT_ONLY_TEST_IDS = frozenset({
     "1.3.8",
     "1.6.6",

@@ -2,10 +2,10 @@
 name: rgaa-audit
 description: >
   Réalise un audit d'accessibilité RGAA 4.1.2 sur des pages web : échantillonnage,
-  tests critère par critère selon rules.html, notation C/NC/NA/NT, relais humain
-  pour les points non testables, reporting CSV et Markdown. Utiliser quand
-  l'utilisateur demande un audit RGAA, une conformité accessibilité, ou cite
-  les critères/tests RGAA.
+  tests critère par critère selon rules.html, notation C/NC/NA, compléments humains
+  (interactif, auto-confirm, AT), relais humain pour les points non testables,
+  reporting CSV et Markdown. Utiliser quand l'utilisateur demande un audit RGAA,
+  une conformité accessibilité, ou cite les critères/tests RGAA.
 disable-model-invocation: true
 ---
 
@@ -41,6 +41,7 @@ Sur le **premier échantillon** de l'audit :
 - [test-environment.md](test-environment.md) — **agent vs humain, VoiceOver/NVDA, combinaisons RGAA**
 - [risks.md](risks.md) — registre des risques par phase
 - [human-handoff.md](human-handoff.md) — gabarit relais humain (condensé)
+- [human-complement.md](human-complement.md) — **phase 4 : tiers AT/jugement/auto, AskQuestion, auto-confirm**
 - [pre-report-template.md](pre-report-template.md) — **pré-rapport NT (livrable obligatoire)**
 - [report-template.md](report-template.md) — gabarit rapport final
 - [examples.md](examples.md) — exemple de déroulé
@@ -91,7 +92,9 @@ Pour chaque échantillon sur l'onglet de session :
 >
 > Merci d'indiquer **la procédure** pour y accéder (ex. remplir le formulaire de simulation puis valider, URL avec paramètres, autre page équivalente) **ou** confirmer l'**exclusion** de cet échantillon.
 
-Consigner la procédence fournie dans `samples-status.json` (`notes`, `human_procedure`).
+Consigner la procédure fournie dans `samples-status.json` (`notes`, `human_procedure`).
+
+**Pages multi-étapes** : une URL peut nécessiter une navigation préalable (formulaire, assistant). L'humain fournit la procédure ; l'agent la rejoue sur le même onglet avant d'auditer.
 
 Enregistrer dans `samples-status.json` : `{ "url": "...", "status": "ok|blocked|replaced", "http_code": 200, "notes": "" }`
 
@@ -116,7 +119,7 @@ Chaque sous-agent :
 1. Lit `work-queue/theme-N.json`
 2. Pour chaque test × échantillon : exécute **toutes** les `agent_steps` via MCP
 3. Loggue via `scripts/audit/log-result.py`
-4. Ne marque **NT** que si `at_handoff` (VoiceOver/NVDA) ou `human_steps` AT
+4. Ne marque **NT** que si `at_handoff` (VoiceOver/NVDA) ou `human_steps` AT — sinon **pass/fail/na obligatoire** (politique zéro NT sur `agent_scope: full`)
 
 ### Outils MCP par type d'étape
 
@@ -179,9 +182,11 @@ Entre échantillons : `browser_navigate` sur le même onglet.
 python3 scripts/audit/aggregate-grid.py audits/{site}/{date}/
 ```
 
-Appliquer [scoring.md](scoring.md). **Source unique** : entrées `test_result` dans `audit-log.jsonl`.
+Appliquer [scoring.md](scoring.md). Source : `test_result` + `human_complement` (si présent) dans `audit-log.jsonl`.
 
-## Phase 4 — Pré-rapport et relais humain
+## Phase 4 — Pré-rapport et compléments humains
+
+Voir **[human-complement.md](human-complement.md)** pour le détail complet.
 
 Générer **`pre-report.md`** (obligatoire si `human_complement_required` ou NT) via [pre-report-template.md](pre-report-template.md).
 
@@ -190,11 +195,28 @@ Pour **chaque** test concerné, inclure obligatoirement :
 - **Pour noter C** — critères de succès explicites (`success_criterion` + `human_steps`)
 - **Cas NC** — conditions d'échec explicites (`failure_criterion`)
 
-Inclure notamment les tests **7.3.x** : l'agent a déjà noté C/NC ; le pré-rapport demande la **confirmation humaine** clavier/pointage réel.
+### Ordre de traitement recommandé
 
-1. **Stopper** ; remettre le pré-rapport — audit non finalisé
-2. Collecter réponses : `{critère} | {url} | {test_id} | C|NC|NA | commentaire`
-3. Mettre à jour grille ; phase 5 si complet ou audit partiel accepté
+1. **7.3.x** — complément interactif (AskQuestion, clavier réel) sur chaque page applicable ; logger `human_complement` avec `source: interactive_keyboard`
+2. **Auto-confirm** — `python3 scripts/audit/auto-confirm-human.py audits/{site}/{date}/ --dry-run` puis exécution ; reprend le résultat agent hors AT/jugement
+3. **AT + jugement** — humain avec lecteur d'écran ou requalification (thématique images, `3.1`, `4.2`, tests `partial` AT)
+4. **NA agent** — ne pas redemander de complément
+
+### Collecte des réponses
+
+Format texte : `{critère} | {url} | {test_id} | C|NC|NA | commentaire`
+
+Ou entrées directes dans `audit-log.jsonl` :
+
+```json
+{"event":"human_complement","criterion":"7.3","test":"7.3.1","human_result":"pass","source":"interactive_keyboard",...}
+```
+
+Après chaque lot : `aggregate-grid.py`.
+
+1. **Stopper** après le pré-rapport initial — audit non finalisé
+2. Traiter les compléments (interactif → auto-confirm → AT/jugement)
+3. Régénérer grille ; phase 5 si complet ou audit partiel accepté
 
 ## Phase 5 — Rapport final
 
@@ -213,9 +235,11 @@ Mentionner obligatoirement : périmètre, limites, statut complet/partiel, méth
 
 ## Checklist finale
 
-- [ ] Tous échantillons `ok` ou exclus documentés
-- [ ] 106 critères traités par échantillon (ou NA justifié)
-- [ ] `pre-report.md` généré et remis si NT (procédures humaines explicites)
-- [ ] NT listés et traités (humain ou audit partiel accepté)
+- [ ] Toutes les pages `ok` ou exclus documentées (`samples-status.json`, `human_procedure` si besoin)
+- [ ] 106 critères traités par page (ou NA justifié)
+- [ ] `pre-report.md` généré et remis si compléments ou NT
+- [ ] Compléments 7.3.x traités interactivement (non auto-confirmés)
+- [ ] Auto-confirm exécuté pour tier structurel (si accepté par l'utilisateur)
+- [ ] Compléments AT/jugement renseignés ou audit partiel documenté
 - [ ] `grid.csv` final + `report.md` générés et cohérents
 - [ ] Preuves (captures) liées aux NC

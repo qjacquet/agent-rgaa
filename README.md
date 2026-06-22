@@ -10,7 +10,11 @@ Voir [`.cursor/skills/rgaa-audit/architecture.md`](.cursor/skills/rgaa-audit/arc
 
 ```
 plan-theme.py → sous-agent MCP (×13 thèmes) → log-result.py → aggregate-grid.py
+                                                      ↓
+                              human-complement (interactif / auto-confirm) → aggregate-grid.py
 ```
+
+Phase 4 : voir [human-complement.md](.cursor/skills/rgaa-audit/human-complement.md).
 
 ## Contenu
 
@@ -18,7 +22,7 @@ plan-theme.py → sous-agent MCP (×13 thèmes) → log-result.py → aggregate-
 | ------- | ---- |
 | [`rules.html`](rules.html) | Référentiel source (106 critères, 258 tests) |
 | [`data/rgaa-rules.json`](data/rgaa-rules.json) | Référentiel structuré + `agent_steps` |
-| [`scripts/audit/`](scripts/audit/) | Pipeline (plan, log, aggregate, resume) |
+| [`scripts/audit/`](scripts/audit/) | Pipeline (plan, log, aggregate, auto-confirm-human, resume) |
 | [`scripts/cdp/`](scripts/cdp/) | Helpers JS appelés pendant un test |
 | [`.cursor/skills/rgaa-audit/`](.cursor/skills/rgaa-audit/) | Skill d'audit |
 

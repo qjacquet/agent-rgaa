@@ -33,8 +33,9 @@ Référence : [Méthodologie de test RGAA](https://accessibilite.numerique.gouv.
 | **HeadingsMap** | `h1–h6` + sauts | `scripts/cdp/query-dom.js` | — |
 | **WCAG Contrast Checker** | Luminance JS + `CSS.getComputedStyleForNode` | `scripts/cdp/contrast-scan.js` | Fond image → NT |
 | Validateur W3C | `Runtime.evaluate` → `outerHTML` / doctype | inline | Optionnel |
-| Navigation clavier | `browser_press_key` | — | 7.3 : complément humain possible |
-| NVDA / VoiceOver / JAWS | **Humain** phase 4 | — | NT si AT requis |
+| Navigation clavier | `browser_press_key` | — | 7.3 : complément humain interactif ([human-complement.md](human-complement.md)) |
+| NVDA / VoiceOver / JAWS | **Humain** phase 4 | — | Tier AT ; AskQuestion ou saisie manuelle |
+| Compléments en lot | `scripts/audit/auto-confirm-human.py` | — | Hors AT/jugement ; pas pour 7.3.x |
 
 ## Snippets via `browser_cdp` (`Runtime.evaluate`)
 
@@ -54,6 +55,17 @@ Voir `scripts/cdp/query-dom.js` et `scripts/cdp/contrast-scan.js`.
   ariaLabelledby: el.getAttribute('aria-labelledby'), title: el.getAttribute('title'), src: el.src?.slice(0,60)
 }))
 ```
+
+## Phase 4 — outils complémentaires
+
+| Besoin | Outil |
+| ------ | ----- |
+| Questions guidées clavier/AT | `AskQuestion` (Cursor) — contexte complet par étape |
+| Enregistrement résultat | `audit-log.jsonl` → `human_complement` |
+| Auto-confirm structurel | `auto-confirm-human.py` puis `aggregate-grid.py` |
+| Agrégation finale | `aggregate-grid.py` |
+
+Voir [human-complement.md](human-complement.md).
 
 ## Environnement de test
 

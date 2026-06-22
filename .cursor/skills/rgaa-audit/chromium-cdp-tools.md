@@ -3,7 +3,7 @@
 > **Important** : le MCP `cursor-ide-browser` **n’installe pas** d’extensions Chrome (WAVE, HeadingsMap, Web Developer, etc.).  
 > Les « plugins » de la méthodologie RGAA sont des **substituts CDP obligatoires** listés ci-dessous.
 
-Vérification effectuée le **2026-06-22** sur https://www.cmvmediforce.fr/ (onglet Cursor `05947d`).
+Vérification effectuée sur un site de production via onglet Cursor MCP (CDP opérationnel).
 
 ## Extensions Chrome — indisponibles
 
@@ -40,9 +40,28 @@ Vérification effectuée le **2026-06-22** sur https://www.cmvmediforce.fr/ (ong
 | Contraste sur fond image / dégradé | `backgroundColor` souvent `transparent` | Remonter ancêtres ou **NT** avec preuve |
 | `CSS.getComputedStyleForNode` sur `#document` | Erreur « Node does not have an owner document » | Toujours `DOM.querySelector` → `nodeId` élément |
 | Réponses CDP > 25 Ko | Sauvegarde fichier `.cursor/browser-logs/` | Lire extrait ciblé, pas tout inline |
-| Restitution sonore AT | AX tree ≠ VoiceOver/NVDA | Agent : AX tree ; humain : phase 4 |
+| Restitution sonore AT | AX tree ≠ VoiceOver/NVDA | Agent : AX tree ; humain : phase 4 ([human-complement.md](human-complement.md)) |
+| Focus visible (7.3.2, 10.7.1) | `browser_press_key` + snapshot ne garantit pas la perceptibilité | CDP : `document.activeElement` + `getComputedStyle` (outline, box-shadow) ; complément humain si doute |
 | `Input.*` CDP | Interdit (focus UI Cursor) | `browser_press_key`, `browser_click` |
 | Extensions Chrome | Non chargeables | Substituts JS/CDP uniquement |
+
+### Focus visible (7.3.2 / 10.7.1)
+
+Après chaque `browser_press_key` Tab, évaluer via `Runtime.evaluate` :
+
+```javascript
+(() => {
+  const el = document.activeElement;
+  if (!el || el === document.body) return { ok: false, reason: "no-focus" };
+  const s = getComputedStyle(el);
+  const outline = s.outlineStyle !== "none" && s.outlineWidth !== "0px";
+  const shadow = s.boxShadow !== "none";
+  const border = s.borderStyle !== "none" && parseFloat(s.borderWidth) > 0;
+  return { ok: outline || shadow || border, tag: el.tagName, outline, shadow, border };
+})()
+```
+
+Si `ok: false` sur des contrôles interactifs → noter `fail` agent ou signaler dans le pré-rapport. Le complément humain 7.3.x reste recommandé : le CDP ne remplace pas le clavier réel.
 
 ## Suite CDP obligatoire par échantillon (phase 2)
 

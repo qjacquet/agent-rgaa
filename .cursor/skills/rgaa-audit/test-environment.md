@@ -113,7 +113,19 @@ Le JSON classe chaque test :
 | `partial` | 7.1.2 | C / NC sur `agent_steps` | `human_steps` AT + **Pour C / Cas NC** |
 | `at_only` | (rare) | NT + pré-analyse | Procédure complète |
 
-~55 tests ont `human_complement_required` (dont **7.3.x**). L'agent **note C/NC** sur 7.3 ; le pré-rapport indique comment **confirmer C** ou **requalifier en NC**.
+~55 tests ont `human_complement_required` (dont **7.3.x**). L'agent **note C/NC** sur 7.3 ; le pré-rapport indique comment **confirmer C** ou **requalifier en NC**. Voir [human-complement.md](human-complement.md) pour le workflow phase 4 complet.
+
+## Limites connues de l'agent (compléments humains)
+
+| Domaine | Fiabilité agent | Complément requis |
+| ------- | ----------------- | ----------------- |
+| Présence `alt`, rôles ARIA, structure listes | Élevée | Auto-confirm souvent suffisant |
+| Contraste calculé (CDP) | Bonne sur cas simples | Spot-check si fond complexe |
+| Clavier simulé (Tab, Enter) | Partielle | **7.3.x** — interactif humain ; faux positifs fréquents sur focus visible |
+| Restitution AT | Nulle via MCP | Humain VoiceOver/NVDA obligatoire |
+| Pertinence alternatives / images | Partielle | Jugement humain (thématique 1.x) |
+
+**Enseignement** : un agent C sur 7.3.x peut être infirmé par le clavier réel (~20 % des cas) — d'où la validation interactive avant auto-confirm sur les autres tests.
 
 ## Formulation dans `pre-report.md` et `nt-handoff.md`
 

@@ -69,8 +69,12 @@
 | Risque | v1 | Action |
 | ------ | -- | ------ |
 | Liste NT trop longue | oui | Grouper par thématique |
+| Liste compléments trop longue | oui | Tiers AT/jugement/auto ; cf. human-complement.md |
 | Réponse incomplète | oui | Pas de reporting final |
-| Contradiction humain/agent | oui | Documenter les deux |
+| Contradiction humain/agent | oui | Logger `human_complement` ; documenter écart |
+| Auto-confirm sur 7.3.x | oui | **Interdit** — validation clavier interactive d'abord |
+| Faux positif agent clavier/focus | oui | CDP focus + complément humain 7.3.x |
+| Page HTTP 500 sans procédure | oui | Stop ; `human_procedure` dans samples-status.json |
 
 ## Phase 5 — Reporting
 

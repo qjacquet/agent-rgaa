@@ -2,6 +2,8 @@
 
 Générer `nt-handoff.md` dans le dossier d'audit quand des tests restent en **NT**.
 
+Pour les tests `human_complement_required` (agent a déjà noté C/NC/NA), voir **[human-complement.md](human-complement.md)** — workflow distinct du NT pur.
+
 ## Template
 
 ```markdown
@@ -42,14 +44,16 @@ Générer `nt-handoff.md` dans le dossier d'audit quand des tests restent en **N
 ## Format de réponse attendu de l'utilisateur
 
 ```
-{criterion_id} | {sample_url} | {C|NC|NA} | {commentaire}
+{criterion_id} | {sample_url} | {test_id} | {C|NC|NA} | {commentaire}
 ```
 
 Exemple :
 ```
-7.3 | https://exemple.fr/compte | C | VoiceOver annonce correctement le changement de contexte
-1.1 | https://exemple.fr/accueil | NC | Logo header : image porteuse d'info sans alt
+7.3 | https://exemple.fr/compte | 7.3.1 | C | Tab atteint tous les contrôles, Entrée active les boutons
+1.1 | https://exemple.fr/accueil | 1.1.1 | NC | Logo header : alternative non pertinente
 ```
+
+L'agent enregistre en `human_complement` dans `audit-log.jsonl` puis relance `aggregate-grid.py`.
 
 ## Règles
 
